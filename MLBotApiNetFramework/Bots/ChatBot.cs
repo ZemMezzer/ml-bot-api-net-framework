@@ -102,8 +102,7 @@ namespace MLBotApiNetFramework.Bots
         
         public void LoadData()
         {
-            if (SaveDataHandler.TryLoadData($"{Bot.Name}.bin", out BotData data))
-                Data = data;
+            Data = SaveDataHandler.TryLoadData($"{Bot.Name}.bin", out BotData data) ? data : new BotData();
         }
 
         public void SaveData()
