@@ -30,7 +30,9 @@ namespace NeuralNetworkBotApiNetFramework.Api.TextGeneration
                 response.Dispose();
                 
                 var parsedResult = result.Root["results"].First["history"]["visible"]?.Last.Last.ToString();
-                return parsedResult;
+
+                var formattedResult = System.Net.WebUtility.HtmlDecode(parsedResult);
+                return formattedResult;
             }
         }
     }

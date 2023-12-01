@@ -8,7 +8,7 @@ namespace NeuralNetworkBotApiNetFramework.Providers.Commands
     {
         public bool TryExecute(MessageData message, ChatBot bot)
         {
-            var history = bot.GetUserHistory(message.Sender);
+            var history = bot.GetUserData(message.Sender).History;
             
             if (String.Equals(message.Message, "/RemoveLast", StringComparison.CurrentCultureIgnoreCase))
             {

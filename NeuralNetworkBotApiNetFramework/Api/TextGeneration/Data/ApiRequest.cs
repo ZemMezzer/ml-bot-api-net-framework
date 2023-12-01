@@ -21,7 +21,9 @@ namespace NeuralNetworkBotApiNetFramework.Api.TextGeneration.Data
             Chat = chat;
             Input = input;
             OnComplete = onComplete;
-            RequestData = new RequestData(input, bot.Bot.Name, sender.UserName, bot.GetUserHistory(sender));
+
+            var userData = bot.GetUserData(sender);
+            RequestData = new RequestData(input, userData, bot.Config, userData.History);
         }
 
         internal void OnRequestCompleted(string result)

@@ -12,12 +12,14 @@ namespace NeuralNetworkBotApiNetFramework.Bots
     public abstract class ChatBot
     {
         public Bot Bot { get;}
-        private Dictionary<UserData, History> _userHistories = new();
-        public BotConfig Config { get; }
+        public BotConfig Config { get; private set; }
+        public BotData Data { get; private set; }
 
         private readonly TextGenerationRequestQueue _requestQueue;
         private readonly InputConverterProvider _convertProvider;
         private readonly CommandsProvider _commandsProvider;
+
+        private bool _isReceiving;
 
         public ChatBot(Bot bot, BotConfig config, TextGenerationRequestQueue requestQueue, CommandsProvider commandsProvider)
         {
@@ -27,11 +29,26 @@ namespace NeuralNetworkBotApiNetFramework.Bots
             _convertProvider = new InputConverterProvider();
             _commandsProvider = commandsProvider;
         }
+
+        public void UpdateConfig(BotConfig config)
+        {
+            Config = config;
+        }
         
         public void StartMessageReceiving()
         {
+            _isReceiving = true;
+            
             Bot.OnMessageReceived += OnMessageReceived;
             Bot.OnBotMessageForwarded += OnBotMessageForwarded;
+        }
+
+        public void StopMessageReceiving()
+        {
+            _isReceiving = false;
+            
+            Bot.OnMessageReceived -= OnMessageReceived;
+            Bot.OnBotMessageForwarded -= OnBotMessageForwarded;
         }
 
         private void OnBotMessageForwarded(MessageData currentMessage, MessageData forwardedMessage)
@@ -43,10 +60,20 @@ namespace NeuralNetworkBotApiNetFramework.Bots
         private void OnMessageReceived(MessageData message)
         {
             Console.WriteLine($"Received message from: {message.Sender.UserName}");
-            if(_commandsProvider.TryExecuteCommand(message, this))
+
+            string formattedMessage = string.Empty;
+
+            if (!string.IsNullOrEmpty(message.Message))
+                formattedMessage = message.Message.Trim();
+            
+            if(_commandsProvider.TryExecuteCommand(message, this) || !string.IsNullOrEmpty(formattedMessage) && formattedMessage[0] == '/')
                 return;
             
             string input = _convertProvider.Convert(message, Config);
+            
+            if(string.IsNullOrEmpty(input))
+                return;
+            
             SendMessageRequest(message, input);
         }
 
@@ -58,28 +85,31 @@ namespace NeuralNetworkBotApiNetFramework.Bots
 
         private void OnRequestComplete(string result, ChatData chat)
         {
+            if(!_isReceiving)
+                return;
+            
             OnMessageGenerationComplete(result, chat);
         }
 
         protected abstract void OnMessageGenerationComplete(string botMessage, ChatData chat);
 
-        public History GetUserHistory(UserData user)
+        public BotUserData GetUserData(UserData user)
         {
-            if (!_userHistories.ContainsKey(user))
-                _userHistories.Add(user, new History(Config.InnerMessage));
-            
-            return _userHistories[user];
+            return Data.GetUserData(user, Config);
         }
+
+        public void UpdateUserData(UserData user, BotUserData data) => Data.UpdateUserData(user, data);
         
         public void LoadData()
         {
-            if (SaveDataHandler.TryLoadData($"{Bot.Name}.bin", out Dictionary<UserData, History> histories))
-                _userHistories = histories;
+            if (SaveDataHandler.TryLoadData($"{Bot.Name}.bin", out BotData data))
+                Data = data;
         }
 
         public void SaveData()
         {
-            SaveDataHandler.SaveData($"{Bot.Name}.bin", _userHistories);
+            if(Data!=null)
+                SaveDataHandler.SaveData($"{Bot.Name}.bin", Data);
         }
     }
 }

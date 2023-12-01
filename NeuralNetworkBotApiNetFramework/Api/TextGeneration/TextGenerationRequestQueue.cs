@@ -8,6 +8,7 @@ namespace NeuralNetworkBotApiNetFramework.Api.TextGeneration
     {
         private static readonly TextGenerationWebRequest Request = new();
         private readonly Queue<ApiRequest> _requestsQueue = new();
+        private readonly Queue<ApiRequest> _notCompletedQueue = new();
         
         private bool _isMessageIsComputing;
 
@@ -19,11 +20,17 @@ namespace NeuralNetworkBotApiNetFramework.Api.TextGeneration
         
         private void ExecuteNextRequest()
         {
-            if(!_isMessageIsComputing && _requestsQueue.Count>0)
-                ComputeRequestInternal(_requestsQueue.Dequeue(), ExecuteNextRequest);
+            if (!_isMessageIsComputing && _requestsQueue.Count > 0)
+            {
+                ComputeRequestInternal(_requestsQueue.Dequeue());
+                return;
+            }
+
+            if (!_isMessageIsComputing && _notCompletedQueue.Count > 0)
+                ComputeRequestInternal(_notCompletedQueue.Dequeue());
         }
 
-        private async void ComputeRequestInternal(ApiRequest apiRequest, Action onComplete)
+        private async void ComputeRequestInternal(ApiRequest apiRequest)
         {
             _isMessageIsComputing = true;
             
@@ -31,31 +38,35 @@ namespace NeuralNetworkBotApiNetFramework.Api.TextGeneration
             
             if (!string.IsNullOrEmpty(resultMessage))
             {
-                History history = apiRequest.Bot.GetUserHistory(apiRequest.Sender);
+                History history = apiRequest.Bot.GetUserData(apiRequest.Sender).History;
                 history.AddPromt(resultMessage);
 
                 var result = await Request.Send(apiRequest);
-
+                
                 if (!string.IsNullOrEmpty(result))
                 {
                     history.SetModelMessage(result);
                     apiRequest.OnRequestCompleted(result);
-                    _isMessageIsComputing = false;
-                    
-                    onComplete?.Invoke();
+                    OnComputingComplete();
                 }
                 else
                 {
                     history.RemoveLast();
-                    ComputeRequestInternal(apiRequest, onComplete);
+                    _notCompletedQueue.Enqueue(apiRequest);
+                    OnComputingComplete();
                 }
             }
             else
             {
-                _isMessageIsComputing = false;
                 apiRequest.OnRequestCompleted(apiRequest.Input);
-                onComplete?.Invoke();
+                OnComputingComplete();
             }
+        }
+
+        private void OnComputingComplete()
+        {
+            _isMessageIsComputing = false;
+            ExecuteNextRequest();
         }
     }
 }

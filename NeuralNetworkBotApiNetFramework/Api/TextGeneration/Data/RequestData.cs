@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using NeuralNetworkBotApiNetFramework.Bots;
 using Newtonsoft.Json;
 
 namespace NeuralNetworkBotApiNetFramework.Api.TextGeneration.Data
@@ -8,24 +9,25 @@ namespace NeuralNetworkBotApiNetFramework.Api.TextGeneration.Data
         public IReadOnlyDictionary<string, object> Data => _data;
         private readonly Dictionary<string, object> _data;
 
-        public RequestData(string message, string characterName, string senderName, History history = null)
+        public RequestData(string message, BotUserData userData, BotConfig config, History history = null)
         {
-            History historyResult = history == null ? new History() : history;
+            History historyResult = history ?? new History();
 
             _data = new Dictionary<string, object>()
             {
                 {"user_input", message},
-                {"max_new_tokens", 250},
+                {"max_new_tokens", 1000},
                 {"history", historyResult},
                 {"mode", "chat"},
-                {"character", characterName},
+                {"character", config.Name},
                 {"instruction_template", "Vicuna-v1.1"},
-                {"your_name", senderName},
+                {"your_name", userData.Name},
                 {"regenerate", false},
                 {"_continue", history == null},
                 {"stop_at_newline", false},
                 {"chat_generation_attempts", 1},
                 {"chat-instruct_command", ""},
+                {"context", string.IsNullOrEmpty(userData.UserContext) ? config.Context : userData.UserContext},
                 {"preset", "simple-1"},
                 {"do_sample", true},
                 {"temperature", 0.7},
@@ -53,7 +55,7 @@ namespace NeuralNetworkBotApiNetFramework.Api.TextGeneration.Data
                 {"truncation_length", 2048},
                 {"ban_eos_token", false},
                 {"skip_special_tokens", true},
-                {"stopping_strings", new List<string>() {"\n### Assistant:", "\n### Human:", "\n### <BOT>:"}}
+                {"stopping_strings", config.StoppingStrings}
             };
         }
 

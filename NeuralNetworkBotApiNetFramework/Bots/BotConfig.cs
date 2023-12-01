@@ -1,48 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace NeuralNetworkBotApiNetFramework.Bots
 {
     [Serializable]
     public struct BotConfig
     {
-        private string _name;
-        private string _apiUrl;
-        private string _botToken;
-        private string _botId;
-        private string _innerMessage;
-        private List<string> _nameAliases;
-
-        public string Name => _name;
-        public string ApiUrl => _apiUrl;
-        public string BotToken => _botToken;
-        public string BotId => _botId;
-        public string InnerMessage => _innerMessage;
-        public IReadOnlyList<string> NameAliases => _nameAliases;
-
-        public BotConfig(string name, string apiUrl, string botToken, string botId, string innerMessage, IReadOnlyList<string> nameAliases)
-        {
-            _name = name;
-            _apiUrl = apiUrl;
-            _botToken = botToken;
-            _botId = botId;
-            _innerMessage = innerMessage;
-            _nameAliases = nameAliases.ToList();
-        }
-
+        public string Name;
+        public string ApiUrl;
+        public string BotToken;
+        public string BotId;
+        public string InnerMessage;
+        public string Context;
+        public List<string> StoppingStrings;
+        public List<string> NameAliases;
+        
         public bool IsValid()
         {
-            if (string.IsNullOrEmpty(_name))
+            if (string.IsNullOrEmpty(Name))
                 return false;
 
-            if (string.IsNullOrEmpty(_apiUrl))
+            if (string.IsNullOrEmpty(ApiUrl))
                 return false;
 
-            if (string.IsNullOrEmpty(_botToken))
+            if (string.IsNullOrEmpty(BotToken))
                 return false;
 
-            if (string.IsNullOrEmpty(_botId))
+            if (string.IsNullOrEmpty(BotId))
                 return false;
 
             return true;

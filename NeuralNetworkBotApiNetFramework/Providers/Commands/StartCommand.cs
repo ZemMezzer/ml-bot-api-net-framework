@@ -10,7 +10,7 @@ namespace NeuralNetworkBotApiNetFramework.Providers.Commands
         {
             if (String.Equals(message.Message, "/Start", StringComparison.CurrentCultureIgnoreCase))
             {
-                bot.GetUserHistory(message.Sender).Clear(bot.Config.InnerMessage);
+                bot.GetUserData(message.Sender).History.Clear(bot.Config.InnerMessage);
                 bot.Bot.SendTextMessage(bot.Config.InnerMessage, message.ChatData);
                 return true;
             }
